@@ -1,0 +1,67 @@
+import streamlit as st
+import cv2
+import numpy as np
+from PIL import Image
+import io
+
+# --- 1. BRANDING & CONFIG ---
+st.set_page_config(page_title="Ama's Sketch Lite", page_icon="🎨")
+
+# --- 2. THE AI SKETCH ENGINE ---
+def get_sketch(img):
+    # This turns your photo into a pencil drawing
+    grey = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    invert = cv2.bitwise_not(grey)
+    blur = cv2.GaussianBlur(invert, (21, 21), 0)
+    return cv2.divide(grey, cv2.bitwise_not(blur), scale=256.0)
+
+# --- 3. SIDEBAR (LOGO) ---
+with st.sidebar:
+    # This will look for your logo. If it's not there yet, it shows a placeholder.
+    try:
+        st.image("logo.png", use_container_width=True)
+    except:
+        st.info("Logo not found. Upload 'logo.png' to the file sidebar!")
+    st.markdown("---")
+    st.write("🛠️ **Genius Mode: ON**")
+
+# --- 4. MAIN INTERFACE ---
+st.title("🎨 Ama's Sketch")
+st.subheader("HI, GUEST! AMAZIAH SENDS HIS GREETINGS.")
+st.write("The world is your canvas. Let's create.")
+
+# --- 5. THE WORKSPACE ---
+tab1, tab2 = st.tabs(["🎨 TRANSFORM", "📚 LEARN"])
+
+with tab1:
+    uploaded_file = st.file_uploader("Choose a photo...", type=["jpg", "png", "jpeg"])
+    
+    if uploaded_file is not None:
+        # Load the image
+        image = Image.open(uploaded_file)
+        img_array = np.array(image)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(image, caption="Original Photo", use_container_width=True)
+            
+        if st.button("MAKE MAGIC ✨"):
+            with st.spinner("Ama is sketching..."):
+                # Run the transformation
+                sketch_res = get_sketch(img_array)
+                
+                with col2:
+                    st.image(sketch_res, caption="Ama's Sketch", use_container_width=True)
+                
+                # Create download button
+                result_img = Image.fromarray(sketch_res).convert("RGB")
+                buf = io.BytesIO()
+                result_img.save(buf, format="JPEG")
+                st.download_button("📥 Save to Phone", buf.getvalue(), "ama_sketch.jpg", "image/jpeg")
+                st.balloons()
+
+with tab2:
+    st.write("### How to Draw Like a Genius")
+    st.info("Step 1: Upload a photo in the 'TRANSFORM' tab.")
+    st.info("Step 2: Study how the AI defines the edges.")
+    st.info("Step 3: Try to copy those lines on real paper!")
